@@ -3,20 +3,52 @@ import time
 import board
 import neopixel
 from digitalio import DigitalInOut, Pull
+import storage
 
 from number_generator import NumberGenerator
 
 MIN_BRIGHTNESS = 0.1
 MAX_BRIGHTNESS = 1.0
 
-num_pixels = 10
-pixels = neopixel.NeoPixel(board.NEOPIXEL, num_pixels, brightness=MIN_BRIGHTNESS, auto_write=False)
+BRIGHTNESS = "brightness"
+
+preferences = {}
+
+num_onboard_pixels = 10
+num_strip_pixels = 30
+
+pixels = neopixel.NeoPixel(board.NEOPIXEL, num_onboard_pixels, brightness=MIN_BRIGHTNESS, auto_write=False)
+strip = neopixel.NeoPixel(board.A1, num_strip_pixels, brightness=MIN_BRIGHTNESS, auto_write=False)
 
 button_a = DigitalInOut(board.BUTTON_A)
 button_a.switch_to_input(pull=Pull.DOWN)
 
 button_b = DigitalInOut(board.BUTTON_B)
 button_b.switch_to_input(pull=Pull.DOWN)
+
+def set_default_preferences():
+    global preferences
+    preferences[BRIGHTNESS] = MIN_BRIGHTNESS
+
+
+def write_prefs():
+    try:
+        with open("/prefs.txt") as file:
+            for k, v in preferences.items():
+                output = k + "=" + str(v)            
+                file.write(output)
+    except OSError as e:
+        print("error writing preferences: " + str(e))
+
+
+def read_prefs():
+    try:
+        with open("/prefs.txt") as file:
+            for line in file:
+                k, v = line.strip().split('=')
+                preferences[k] = v
+    except OSError as e:
+        print("error reading preferences: " + str(e))
 
 
 def wheel(pos):
@@ -48,26 +80,39 @@ def brightness_up(brightness_value):
 
 
 def rainbow_cycle(wait):
-    brightness = MIN_BRIGHTNESS
+    global preferences
     ng = NumberGenerator(0, 256)
 
     for j in iter(ng):
         initial_a = button_a.value
         initial_b = button_b.value
 
-        for i in range(num_pixels):
-            rc_index = (i * 256 // num_pixels) + j
+        for i in range(num_onboard_pixels):
+            rc_index = (i * 256 // num_onboard_pixels) + j
             pixels[i] = wheel(rc_index & 255)
+
         pixels.show()
 
-        if not button_a.value and initial_a:
-            brightness = brightness_down(brightness)
-        if not button_b.value and initial_b:
-            brightness = brightness_up(brightness)
+        for i in range(num_strip_pixels):
+            rc_index = (i * 256 // num_onboard_pixels) + j
+            strip[i] = wheel(rc_index & 255)
 
-        pixels.brightness = brightness
+        strip.show()
+
+        if not button_a.value and initial_a:
+            preferences[BRIGHTNESS] = brightness_down(preferences[BRIGHTNESS])
+            write_prefs()
+        if not button_b.value and initial_b:
+            preferences[BRIGHTNESS] = brightness_up(preferences[BRIGHTNESS])
+            write_prefs()
+
+        pixels.brightness = preferences[BRIGHTNESS]
+        strip.brightness = preferences[BRIGHTNESS]
         time.sleep(wait)
 
+
+set_default_preferences();
+read_prefs();
 
 while True:
     rainbow_cycle(0)  # Increase the number to slow down the rainbow
