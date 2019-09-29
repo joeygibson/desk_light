@@ -2,7 +2,7 @@ import time
 
 import board
 import neopixel
-from digitalio import DigitalInOut, Pull
+from digitalio import DigitalInOut, Direction, Pull
 import storage
 import adafruit_logging as logging
 
@@ -16,13 +16,14 @@ BRIGHTNESS = "brightness"
 logger = logging.getLogger('desk_lamp')
 logger.setLevel(logging.INFO)
 
-preferences = {}
+preferences = {BRIGHTNESS: MIN_BRIGHTNESS}
+preference_converters = {BRIGHTNESS: float}
 
 num_onboard_pixels = 10
 num_strip_pixels = 30
 
-pixels = neopixel.NeoPixel(board.NEOPIXEL, num_onboard_pixels, brightness=MIN_BRIGHTNESS, auto_write=False)
-strip = neopixel.NeoPixel(board.A1, num_strip_pixels, brightness=MIN_BRIGHTNESS, auto_write=False)
+led = DigitalInOut(board.D13)
+led.direction = Direction.OUTPUT
 
 button_a = DigitalInOut(board.BUTTON_A)
 button_a.switch_to_input(pull=Pull.DOWN)
@@ -30,27 +31,39 @@ button_a.switch_to_input(pull=Pull.DOWN)
 button_b = DigitalInOut(board.BUTTON_B)
 button_b.switch_to_input(pull=Pull.DOWN)
 
-def set_default_preferences():
-    global preferences
-    preferences[BRIGHTNESS] = MIN_BRIGHTNESS
+
+def blink_led(times):
+    for i in range(times):
+        led.value = True
+        time.sleep(0.5)
+        led.value = False
+        time.sleep(0.5)
 
 
 def write_prefs():
     try:
-        with open("/prefs.txt") as file:
+        with open("/prefs.txt", "w") as file:
             for k, v in preferences.items():
-                output = k + "=" + str(v)            
+                output = "{k}={v}".format(k, str(v))
+                logger.info("{} = {}".format(k, v))
                 file.write(output)
+
+            file.flush()
+            blink_led(1)
     except OSError as e:
+        blink_led(5)
         logger.error("writing preferences: " + str(e))
 
 
 def read_prefs():
+    global preferences
     try:
         with open("/prefs.txt") as file:
             for line in file:
-                k, v = line.strip().split('=')
-                preferences[k] = v
+                if len(line.strip()):
+                    k, v = line.strip().split('=')
+                    logger.info("preferences[{}] = {}".format(k, v))
+                    preferences[k] = preference_converters[k](v)
     except OSError as e:
         logger.error("reading preferences: " + str(e))
 
@@ -83,6 +96,11 @@ def brightness_up(brightness_value):
     return brightness_value
 
 
+def apply_brightness(brightness_value):
+    pixels.brightness = preferences[BRIGHTNESS]
+    strip.brightness = preferences[BRIGHTNESS]
+
+
 def rainbow_cycle(wait):
     global preferences
     ng = NumberGenerator(0, 256)
@@ -105,21 +123,24 @@ def rainbow_cycle(wait):
 
         if not button_a.value and initial_a:
             preferences[BRIGHTNESS] = brightness_down(preferences[BRIGHTNESS])
+            apply_brightness(preferences[BRIGHTNESS])
             write_prefs()
         if not button_b.value and initial_b:
             preferences[BRIGHTNESS] = brightness_up(preferences[BRIGHTNESS])
+            apply_brightness(preferences[BRIGHTNESS])
             write_prefs()
 
-        pixels.brightness = preferences[BRIGHTNESS]
-        strip.brightness = preferences[BRIGHTNESS]
         time.sleep(wait)
 
 
-logger.info("setting defaults")
-set_default_preferences();
-
 logger.info("reading preferences")
-read_prefs();
+read_prefs()
+
+pixels = neopixel.NeoPixel(board.NEOPIXEL, num_onboard_pixels,
+                           brightness=preferences[BRIGHTNESS], auto_write=False)
+strip = neopixel.NeoPixel(board.A1, num_strip_pixels,
+                          brightness=preferences[BRIGHTNESS], auto_write=False)
+
 
 while True:
     rainbow_cycle(0)  # Increase the number to slow down the rainbow
