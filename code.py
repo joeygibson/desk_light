@@ -4,6 +4,7 @@ import board
 import neopixel
 from digitalio import DigitalInOut, Pull
 import storage
+import adafruit_logging as logging
 
 from number_generator import NumberGenerator
 
@@ -11,6 +12,9 @@ MIN_BRIGHTNESS = 0.1
 MAX_BRIGHTNESS = 1.0
 
 BRIGHTNESS = "brightness"
+
+logger = logging.getLogger('desk_lamp')
+logger.setLevel(logging.INFO)
 
 preferences = {}
 
@@ -38,7 +42,7 @@ def write_prefs():
                 output = k + "=" + str(v)            
                 file.write(output)
     except OSError as e:
-        print("error writing preferences: " + str(e))
+        logger.error("writing preferences: " + str(e))
 
 
 def read_prefs():
@@ -48,7 +52,7 @@ def read_prefs():
                 k, v = line.strip().split('=')
                 preferences[k] = v
     except OSError as e:
-        print("error reading preferences: " + str(e))
+        logger.error("reading preferences: " + str(e))
 
 
 def wheel(pos):
@@ -111,7 +115,10 @@ def rainbow_cycle(wait):
         time.sleep(wait)
 
 
+logger.info("setting defaults")
 set_default_preferences();
+
+logger.info("reading preferences")
 read_prefs();
 
 while True:
