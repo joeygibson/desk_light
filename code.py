@@ -35,23 +35,22 @@ button_b.switch_to_input(pull=Pull.DOWN)
 def blink_led(times):
     for i in range(times):
         led.value = True
-        time.sleep(0.5)
+        time.sleep(0.1)
         led.value = False
-        time.sleep(0.5)
+        time.sleep(0.1)
 
 
 def write_prefs():
     try:
         with open("/prefs.txt", "w") as file:
             for k, v in preferences.items():
-                output = "{k}={v}".format(k, str(v))
-                logger.info("{} = {}".format(k, v))
+                output = "{k}={v}\n".format(k, str(v))
                 file.write(output)
 
             file.flush()
-            blink_led(1)
     except OSError as e:
         blink_led(5)
+
         logger.error("writing preferences: " + str(e))
 
 
