@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+TARGET_DIR=/Volumes/CIRCUITPY
+
+for file in *.py; do
+  if [ "${file}" -nt "${TARGET_DIR}/${file}" ]; then
+    echo "copying ${file}"
+    cp "${file}" ${TARGET_DIR}/
+  fi
+done

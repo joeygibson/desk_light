@@ -1,10 +1,9 @@
 import time
 
+import adafruit_logging as logging
 import board
 import neopixel
 from digitalio import DigitalInOut, Direction, Pull
-import storage
-import adafruit_logging as logging
 
 from number_generator import NumberGenerator
 
@@ -49,7 +48,7 @@ def write_prefs():
 
             file.flush()
     except OSError as e:
-        blink_led(5)
+        # blink_led(5)
 
         logger.error("writing preferences: " + str(e))
 
@@ -139,7 +138,6 @@ pixels = neopixel.NeoPixel(board.NEOPIXEL, num_onboard_pixels,
                            brightness=preferences[BRIGHTNESS], auto_write=False)
 strip = neopixel.NeoPixel(board.A1, num_strip_pixels,
                           brightness=preferences[BRIGHTNESS], auto_write=False)
-
 
 while True:
     rainbow_cycle(0)  # Increase the number to slow down the rainbow
