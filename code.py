@@ -10,10 +10,12 @@ from number_generator import NumberGenerator
 MIN_BRIGHTNESS = 0.1
 MAX_BRIGHTNESS = 1.0
 
-BRIGHTNESS = "brightness"
+SLOW_SPEED = 5
 
 logger = logging.getLogger('desk_lamp')
 logger.setLevel(logging.INFO)
+
+BRIGHTNESS = "brightness"
 
 preferences = {BRIGHTNESS: MIN_BRIGHTNESS}
 preference_converters = {BRIGHTNESS: float}
@@ -30,6 +32,15 @@ button_a.switch_to_input(pull=Pull.DOWN)
 button_b = DigitalInOut(board.BUTTON_B)
 button_b.switch_to_input(pull=Pull.DOWN)
 
+switch = DigitalInOut(board.D7)
+switch.direction = Direction.INPUT
+switch.pull = Pull.UP
+
+pixels = neopixel.NeoPixel(board.NEOPIXEL, num_onboard_pixels,
+                           brightness=preferences[BRIGHTNESS], auto_write=False)
+strip = neopixel.NeoPixel(board.A1, num_strip_pixels,
+                          brightness=preferences[BRIGHTNESS], auto_write=False)
+
 
 def blink_led(times):
     for i in range(times):
@@ -43,7 +54,7 @@ def write_prefs():
     try:
         with open("/prefs.txt", "w") as file:
             for k, v in preferences.items():
-                output = "{k}={v}\n".format(k, str(v))
+                output = "{}={}\n".format(k, str(v))
                 file.write(output)
 
             file.flush()
@@ -60,8 +71,9 @@ def read_prefs():
             for line in file:
                 if len(line.strip()):
                     k, v = line.strip().split('=')
-                    logger.info("preferences[{}] = {}".format(k, v))
-                    preferences[k] = preference_converters[k](v)
+                    if k in preferences:
+                        logger.info("preferences[{}] = {}".format(k, v))
+                        preferences[k] = preference_converters[k](v)
     except OSError as e:
         logger.error("reading preferences: " + str(e))
 
@@ -114,30 +126,22 @@ def rainbow_cycle(wait):
         pixels.show()
 
         for i in range(num_strip_pixels):
-            rc_index = (i * 256 // num_onboard_pixels) + j
+            rc_index = (i * 256 // num_strip_pixels) + j
             strip[i] = wheel(rc_index & 255)
 
         strip.show()
 
         if not button_a.value and initial_a:
             preferences[BRIGHTNESS] = brightness_down(preferences[BRIGHTNESS])
-            apply_brightness(preferences[BRIGHTNESS])
-            write_prefs()
+
         if not button_b.value and initial_b:
             preferences[BRIGHTNESS] = brightness_up(preferences[BRIGHTNESS])
-            apply_brightness(preferences[BRIGHTNESS])
-            write_prefs()
 
-        time.sleep(wait)
+        apply_brightness(preferences[BRIGHTNESS])
 
 
 logger.info("reading preferences")
 read_prefs()
-
-pixels = neopixel.NeoPixel(board.NEOPIXEL, num_onboard_pixels,
-                           brightness=preferences[BRIGHTNESS], auto_write=False)
-strip = neopixel.NeoPixel(board.A1, num_strip_pixels,
-                          brightness=preferences[BRIGHTNESS], auto_write=False)
 
 while True:
     rainbow_cycle(0)  # Increase the number to slow down the rainbow

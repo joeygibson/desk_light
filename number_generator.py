@@ -1,9 +1,8 @@
 class NumberGenerator:
-    def __init__(self, min, max):
-        self.min = min
-        self.max = max
-        self.val = min
-        self.direction = 'up'
+    def __init__(self, min_value, max_value):
+        self.min_value = min_value
+        self.max_value = max_value
+        self.val = min_value
 
     def __iter__(self):
         self.started = False
@@ -11,23 +10,13 @@ class NumberGenerator:
         return self
 
     def __next__(self):
-        tmp_val = self.val
-
         if not self.started:
             self.started = True
         else:
-            if self.direction == 'up':
-                tmp_val = tmp_val + 1
+            tmp_val = self.val + 1
 
-                if tmp_val > self.max:
-                    self.direction = 'down'
-                    tmp_val = self.val - 1
-            else:
-                tmp_val = tmp_val - 1
-
-                if tmp_val < self.min:
-                    self.direction = 'up'
-                    tmp_val = self.val + 1
+            if tmp_val > self.max_value:
+                tmp_val = self.min_value
 
             self.val = tmp_val
 
