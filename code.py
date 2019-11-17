@@ -50,34 +50,6 @@ def blink_led(times):
         time.sleep(0.1)
 
 
-def write_prefs():
-    try:
-        with open("/prefs.txt", "w") as file:
-            for k, v in preferences.items():
-                output = "{}={}\n".format(k, str(v))
-                file.write(output)
-
-            file.flush()
-    except OSError as e:
-        # blink_led(5)
-
-        logger.error("writing preferences: " + str(e))
-
-
-def read_prefs():
-    global preferences
-    try:
-        with open("/prefs.txt") as file:
-            for line in file:
-                if len(line.strip()):
-                    k, v = line.strip().split('=')
-                    if k in preferences:
-                        logger.info("preferences[{}] = {}".format(k, v))
-                        preferences[k] = preference_converters[k](v)
-    except OSError as e:
-        logger.error("reading preferences: " + str(e))
-
-
 def wheel(pos):
     # Input a value 0 to 255 to get a color value.
     # The colours are a transition r - g - b - back to r.
@@ -139,9 +111,6 @@ def rainbow_cycle(wait):
 
         apply_brightness(preferences[BRIGHTNESS])
 
-
-logger.info("reading preferences")
-read_prefs()
 
 while True:
     rainbow_cycle(0)  # Increase the number to slow down the rainbow

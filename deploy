@@ -8,3 +8,10 @@ for file in *.py; do
     cp "${file}" ${TARGET_DIR}/
   fi
 done
+
+for file in lib/*.?py; do
+  if [ "${file}" -nt "${TARGET_DIR}/${file}" ]; then
+    echo "copying ${file}"
+    cp "${file}" ${TARGET_DIR}/lib/
+  fi
+done
