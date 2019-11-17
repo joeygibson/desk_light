@@ -36,10 +36,10 @@ switch = DigitalInOut(board.D7)
 switch.direction = Direction.INPUT
 switch.pull = Pull.UP
 
-pixels = neopixel.NeoPixel(board.NEOPIXEL, num_onboard_pixels,
-                           brightness=preferences[BRIGHTNESS], auto_write=False)
-strip = neopixel.NeoPixel(board.A1, num_strip_pixels,
-                          brightness=preferences[BRIGHTNESS], auto_write=False)
+onboard_pixels = neopixel.NeoPixel(board.NEOPIXEL, num_onboard_pixels,
+                                   brightness=preferences[BRIGHTNESS], auto_write=False)
+strip_pixels = neopixel.NeoPixel(board.A1, num_strip_pixels,
+                                 brightness=preferences[BRIGHTNESS], auto_write=False)
 
 
 def blink_led(times):
@@ -64,6 +64,18 @@ def wheel(pos):
     return pos * 3, 0, 255 - pos * 3
 
 
+def christmas_wheel(pos):
+    if pos < 0 or pos > 255:
+        return 0, 0, 0
+    if pos < 85:
+        return 255, 0, 0
+    if pos < 170:
+        pos -= 85
+        return 0, 255, 0
+    pos -= 170
+    return 255, 255, 255
+
+
 def brightness_down(brightness_value):
     if brightness_value > MIN_BRIGHTNESS:
         brightness_value -= 0.1
@@ -78,9 +90,20 @@ def brightness_up(brightness_value):
     return brightness_value
 
 
-def apply_brightness(brightness_value):
+def apply_brightness(pixels, brightness_value):
     pixels.brightness = preferences[BRIGHTNESS]
-    strip.brightness = preferences[BRIGHTNESS]
+
+
+def update_pixels(pixels, iteration, pixel_count):
+    for i in range(pixel_count):
+        rc_index = (i * 256 // num_onboard_pixels) + iteration
+
+        if switch.value:
+            pixels[i] = wheel(rc_index & 255)
+        else:
+            pixels[i] = christmas_wheel(rc_index & 255)
+
+    pixels.show()
 
 
 def rainbow_cycle(wait):
@@ -91,17 +114,8 @@ def rainbow_cycle(wait):
         initial_a = button_a.value
         initial_b = button_b.value
 
-        for i in range(num_onboard_pixels):
-            rc_index = (i * 256 // num_onboard_pixels) + j
-            pixels[i] = wheel(rc_index & 255)
-
-        pixels.show()
-
-        for i in range(num_strip_pixels):
-            rc_index = (i * 256 // num_strip_pixels) + j
-            strip[i] = wheel(rc_index & 255)
-
-        strip.show()
+        update_pixels(onboard_pixels, j, num_onboard_pixels)
+        update_pixels(strip_pixels, j, num_strip_pixels)
 
         if not button_a.value and initial_a:
             preferences[BRIGHTNESS] = brightness_down(preferences[BRIGHTNESS])
@@ -109,7 +123,8 @@ def rainbow_cycle(wait):
         if not button_b.value and initial_b:
             preferences[BRIGHTNESS] = brightness_up(preferences[BRIGHTNESS])
 
-        apply_brightness(preferences[BRIGHTNESS])
+        apply_brightness(onboard_pixels, preferences[BRIGHTNESS])
+        apply_brightness(strip_pixels, preferences[BRIGHTNESS])
 
 
 while True:
