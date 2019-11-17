@@ -65,15 +65,12 @@ def wheel(pos):
 
 
 def christmas_wheel(pos):
-    if pos < 0 or pos > 255:
-        return 0, 0, 0
     if pos < 85:
         return 255, 0, 0
     if pos < 170:
-        pos -= 85
         return 0, 255, 0
-    pos -= 170
-    return 255, 255, 255
+    else:
+        return 255, 215, 0
 
 
 def brightness_down(brightness_value):
@@ -106,7 +103,7 @@ def update_pixels(pixels, iteration, pixel_count):
     pixels.show()
 
 
-def rainbow_cycle(wait):
+def rainbow_cycle():
     global preferences
     ng = NumberGenerator(0, 256)
 
@@ -128,4 +125,4 @@ def rainbow_cycle(wait):
 
 
 while True:
-    rainbow_cycle(0)  # Increase the number to slow down the rainbow
+    rainbow_cycle()
