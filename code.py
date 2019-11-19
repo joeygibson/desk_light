@@ -17,8 +17,7 @@ logger.setLevel(logging.INFO)
 
 BRIGHTNESS = "brightness"
 
-preferences = {BRIGHTNESS: MIN_BRIGHTNESS}
-preference_converters = {BRIGHTNESS: float}
+preferences = {BRIGHTNESS: MAX_BRIGHTNESS}
 
 num_onboard_pixels = 10
 num_strip_pixels = 30
